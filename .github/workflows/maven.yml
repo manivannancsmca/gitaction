@@ -26,7 +26,7 @@ jobs:
       with:
         image: manivannancsmca/gitaction
         tags: v1, latest
-        registry: registry-url.io
+        registry: docker.io
         dockerfile: Dockerfile.ci
         username: ${{ secrets.DOCKER_USERNAME }}
 
