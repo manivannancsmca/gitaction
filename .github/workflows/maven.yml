@@ -1,33 +1,51 @@
-name: Java CI with Maven
+name: Build & Push Docker Image
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: maven
-    - name: Build with Maven
-      run: mvn clean install
-    - uses: mr-smithers-excellent/docker-build-push@v6
-      name: Build & push Docker image
-      with:
-        image: manivannancsmca/gitaction
-        tags: v1, latest
-        registry: docker.io
-        dockerfile: Dockerfile
-        username: ${{ secrets.DOCKER_USERNAME }}
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      # 2. Setup Java
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # 3. Build JAR
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      # 4. Debug (critical – don’t remove until stable)
+      - name: Verify build output
+        run: |
+          echo "Listing project structure:"
+          ls -R
+          echo "Checking target folder:"
+          ls target
+
+      # 5. Login to Docker Hub (using token)
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      # 6. Build & Push Docker Image
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/gitaction:latest
+            docker.io/${{ secrets.DOCKER_USERNAME }}/gitaction:v1
